@@ -6,8 +6,9 @@
 // @match        https://inventory.coupang.com//replenish/order/list/*
 // @run-at       document-idle
 // @grant        none
-// @downloadURL  https://raw.githubusercontent.com/ORG/REPO/main/Logistics-Table-Sorter.user.js
-// @updateURL    https://raw.githubusercontent.com/ORG/REPO/main/Logistics-Table-Sorter.user.js
+// @downloadURL  https://raw.githubusercontent.com/Kategorie/Logistics-Table-Sorter/main/Logistics-Table-Sorter.user.js
+// @updateURL    https://raw.githubusercontent.com/Kategorie/Logistics-Table-Sorter/main/Logistics-Table-Sorter.user.js
+
 // ==/UserScript==
 
 // match 주의할 것.
