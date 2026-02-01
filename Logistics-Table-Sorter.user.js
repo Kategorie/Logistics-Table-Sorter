@@ -12,6 +12,8 @@
 // ==/UserScript==
 
 // match 주의할 것.
+// version 매 번 올릴 것. 그래야 적용됨.
+// namespace, downloadURL, updateURL 고정.
 
 (function () {
   "use strict";
