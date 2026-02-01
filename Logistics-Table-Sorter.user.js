@@ -3,12 +3,11 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.0.0
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
-// @match        https://YOUR_TARGET_DOMAIN_HERE/*
+// @match        https://inventory.coupang.com//replenish/order/list/*
 // @run-at       document-idle
 // @grant        none
 // @downloadURL  https://raw.githubusercontent.com/ORG/REPO/main/Logistics-Table-Sorter.user.js
 // @updateURL    https://raw.githubusercontent.com/ORG/REPO/main/Logistics-Table-Sorter.user.js
-
 // ==/UserScript==
 
 // match 주의할 것.
