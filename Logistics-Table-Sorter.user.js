@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.0.3
+// @version      1.0.4
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -12,14 +12,14 @@
 
 // ==/UserScript==
 
-// match 주의할 것.
+// match 주의할 것. 기본 형태 https://.../*
 // version 매 번 올릴 것. 그래야 적용됨.
 // namespace, downloadURL, updateURL 고정.
 
 (function () {
   "use strict";
 
-  // 여기에서만 조정하세요
+  // 여기에서만 조정.
   const CONFIG_OVERRIDE = {
     tableSelector: 'table.table.table-bordered.table-striped.table-hover', // 테이블 선택자
     headerNames: {
@@ -53,18 +53,45 @@
     }
 
     function getLatestTable() {
-      return document.querySelector(CONFIG.tableSelector);
+      const targets = Object.values(CONFIG.headerNames).map(normalizeText);
+
+      const tables = Array.from(document.querySelectorAll("table"));
+      for (const table of tables) {
+        const ths = Array.from(table.querySelectorAll("thead th"));
+        if (!ths.length) continue;
+
+        const headers = ths.map(th => normalizeText(th.textContent));
+        const headerLine = headers.join(" | ");
+
+        const ok = targets.every(t => headerLine.includes(t));
+        if (ok) return table;
+      }
+      return null;
     }
+
+    console.log("[TM] running on", location.href);  // debug log
+
+    function debugDumpTable(table) {  // debug log
+      if (!table) {
+        console.log("[TM] table not found");
+        return;
+      }
+      const ths = Array.from(table.querySelectorAll("thead th"));
+      console.log("[TM] found table, th count =", ths.length);
+      console.log("[TM] headers =", ths.map(th => th.textContent.replace(/\s+/g, " ").trim()));
+    }
+
 
     function getHeaderCells(table) {
       return Array.from(table.querySelectorAll("thead th"));
     }
 
     function findColIndex(table, headerText) {
-      const ths = getHeaderCells(table);
       const target = normalizeText(headerText);
+      const ths = Array.from(table.querySelectorAll("thead th"));
       for (let i = 0; i < ths.length; i++) {
-        if (normalizeText(ths[i].textContent) === target) return i;
+        const got = normalizeText(ths[i].textContent);
+        if (got.includes(target)) return i; // 핵심 변경
       }
       return -1;
     }
@@ -265,6 +292,7 @@
     function observeAndInit() {
       const tryInit = () => {
         const table = getLatestTable();
+        debugDumpTable(table);  // debug log
         if (table) initTableIfNeeded(table);
       };
 
@@ -290,6 +318,7 @@
     return { start };
   })();
 
-  // 여기 한 줄만 실행하면 됩니다
+  // 여기 한 줄만 실행
   TmSorter.start();
+  console.log("[TM] TmSorter.start()"); // debug log
 })();
