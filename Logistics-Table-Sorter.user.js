@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.1.2
+// @version      1.2.0
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -248,7 +248,10 @@
       if (!hasAny) return;
 
       injectHeaderButtons(table, columnMap);
-      // injectPanel(table, columnMap); // 드롭다운 패널 비활성화
+      // 드롭다운 패널 비활성화
+      // injectPanel(table, columnMap);
+      // 프린트 버튼 추가
+      injectPrintButton(table);
 
       table.setAttribute(CONFIG.markerAttr, "1");
     }
@@ -331,6 +334,121 @@
     return { start };
   })();
 
+  // ---------- Print button functionality ----------
+  // 프린트 버튼 관련 기능
+  function findSummaryHeaderElement() {
+    // 1순위: h4 안에 span[style*="color:red"]가 있고, 텍스트에 "총"과 "건"이 함께 있는 것.
+    const h4s = Array.from(document.querySelectorAll("h4"));
+    for (const h4 of h4s) {
+        const redSpan = h4.querySelector('span[style*="color:red"]');
+        const txt = (h4.textContent || "").replace(/\s+/g, " ").trim();
+        if (redSpan && txt.includes("총") && txt.includes("건")) return h4;
+    }
+    // 2순위: 텍스트 패턴만으로라도 찾기.
+    for (const h4 of h4s) {
+        const txt = (h4.textContent || "").replace(/\s+/g, " ").trim();
+        if (txt.match(/\d{4}-\d{2}-\d{2}/) && txt.includes("총") && txt.includes("건")) return h4;
+    }
+    return null;
+  }
+
+  // 프린트 버튼 관련 기능
+  function openPrintWindowWithHeaderAndTable(headerEl, tableEl, titleText = "Replenish Order Print") {
+    const headerHtml = headerEl ? headerEl.outerHTML : "";
+    const tableHtml = tableEl ? tableEl.outerHTML : "<div>table not found</div>";
+
+    // 테이블이 부트스트랩 클래스 기반이라면 최소한의 표 스타일을 함께 넣는 편이 인쇄 품질이 좋다.
+    const css = `
+        @page { margin: 12mm; }
+        body { font-family: Arial, "Malgun Gothic", sans-serif; font-size: 12px; color: #111; }
+        h4 { margin: 0 0 10px 0; font-size: 14px; font-weight: 600; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #333; padding: 6px 8px; vertical-align: top; }
+        th { background: #f2f2f2; }
+        .table-bordered th, .table-bordered td { border: 1px solid #333; }
+        .table-striped tbody tr:nth-child(odd) { background: #fafafa; }
+        .tm-sort-controls { display: none !important; } /* 인쇄물에는 정렬 버튼 숨김 */
+    `;
+
+    const html = `<!doctype html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <title>${escapeHtml(titleText)}</title>
+            <style>${css}</style>
+        </head>
+        <body>
+            ${headerHtml}
+            ${tableHtml}
+            <script>
+                // 로드되면 바로 인쇄 다이얼로그를 열고, 사용자가 인쇄/취소 후 창을 닫기 쉽게 처리
+                window.onload = function () {
+                    try { window.focus(); } catch (e) {}
+                    try { window.print(); } catch (e) {}
+                };
+                window.onafterprint = function () {
+                    try { window.close(); } catch (e) {}
+            };
+            </script>
+        </body>
+        </html>`;
+
+    const w = window.open("", "_blank", "width=1000,height=800");
+    if (!w) {
+        alert("팝업이 차단되어 인쇄 창을 열 수 없습니다. 이 사이트에서 팝업 허용 후 다시 시도해 주세요.");
+        return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function injectPrintButton(tableEl) {
+    if (!tableEl) return;
+
+    // 중복 주입 방지
+    if (document.getElementById("tm-print-table-btn")) return;
+
+    const headerEl = findSummaryHeaderElement();
+
+    const btn = document.createElement("button");
+    btn.id = "tm-print-table-btn";
+    btn.type = "button";
+    btn.textContent = "표만 인쇄";
+    btn.style.cssText = [
+        "margin: 8px 0 10px 0",
+        "padding: 6px 10px",
+        "border: 1px solid #888",
+        "border-radius: 6px",
+        "background: #fff",
+        "cursor: pointer",
+        "font-size: 12px",
+    ].join(";");
+
+    btn.addEventListener("click", () => {
+        // 클릭 시점에 최신 헤더와 최신 테이블을 다시 잡아 출력하는 게 안전.
+        const freshHeader = findSummaryHeaderElement() || headerEl;
+        openPrintWindowWithHeaderAndTable(freshHeader, tableEl, "Replenish Order Table");
+    });
+
+    // 버튼 배치: 날짜/건수(h4) 아래가 가장 자연스럽고, 없으면 테이블 위에 붙임.
+    if (headerEl && headerEl.parentElement) {
+        headerEl.parentElement.insertBefore(btn, headerEl.nextSibling);
+    } else {
+        tableEl.parentElement.insertBefore(btn, tableEl);
+    }
+  }
+
+  // ---------- Search request hook to force page size ----------
   // 조회값 파라미터 기본 설정.
   function ensureParam(params, key, defaultValue = "") {
     if (!params.has(key)) {
