@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.0
+// @version      1.2.1
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -423,8 +423,9 @@
     const btn = document.createElement("button");
     btn.id = "tm-print-table-btn";
     btn.type = "button";
-    btn.textContent = "표만 인쇄";
+    btn.textContent = "조회 데이터 인쇄";
     btn.style.cssText = [
+        "display: block",
         "margin: 8px 0 10px 0",
         "padding: 6px 10px",
         "border: 1px solid #888",
