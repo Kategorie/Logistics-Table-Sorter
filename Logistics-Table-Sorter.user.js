@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.3
+// @version      1.2.4
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -415,40 +415,60 @@
   function injectPrintButton(tableEl) {
     if (!tableEl) return;
 
-    // 중복 주입 방지
-    if (document.getElementById("tm-print-table-btn")) return;
-
+    // h4
     const headerEl = findSummaryHeaderElement();
+    const wrap = headerEl?.parentElement ?? null;
+    const fallbackWrap = tableEl.parentElement ?? null;
+
+    // 중복 주입 방지: "현재 붙일 위치" 기준으로만 검사
+    if (wrap && wrap.querySelector("#tm-print-table-btn")) return;
+    if (!wrap && fallbackWrap && fallbackWrap.querySelector("#tm-print-table-btn")) return;
 
     const btn = document.createElement("button");
     btn.id = "tm-print-table-btn";
     btn.type = "button";
     btn.textContent = "조회 데이터 인쇄";
     btn.style.cssText = [
-        "display: block",
-        "margin: 8px 0 10px 0",
-        "margin-right: auto",
+        "display: inline-flex",
+        "align-items: center",
         "padding: 6px 10px",
         "border: 1px solid #888",
         "border-radius: 6px",
         "background: #fff",
         "cursor: pointer",
         "font-size: 12px",
+        "margin: 0",
+        "white-space: nowrap",
     ].join(";");
 
     btn.addEventListener("click", () => {
         // 클릭 시점에 최신 헤더와 최신 테이블을 다시 잡아 출력하는 게 안전.
-        const freshHeader = findSummaryHeaderElement() || headerEl;
-        openPrintWindowWithHeaderAndTable(freshHeader, tableEl, "Replenish Order Table");
+        const headerElNow = findSummaryHeaderElement();
+        openPrintWindowWithHeaderAndTable(headerElNow, tableEl, "Replenish Order Table");
     });
 
-    // 버튼 배치: 날짜/건수(h4) 아래가 가장 자연스럽고, 없으면 테이블 위에 붙임.
-    if (headerEl && headerEl.parentElement) {
-        headerEl.parentElement.insertBefore(btn, headerEl.nextSibling);
-    } else {
-        tableEl.parentElement.insertBefore(btn, tableEl);
+    // 버튼 배치: 날짜/건수(h4)와 같이 정렬.
+    if (wrap) {
+        // wrap을 버튼(좌) + h4(우) 정렬로 구성
+        wrap.style.display = "flex";
+        wrap.style.alignItems = "center";
+        wrap.style.justifyContent = "space-between";
+        wrap.style.gap = "8px";
+
+        // h4는 오른쪽에 붙도록 보정(혹시 사이트 CSS가 건드릴 때 대비)
+        headerEl.style.margin = "0";
+        headerEl.style.marginLeft = "auto";
+
+        // 버튼을 wrap의 맨 앞에 삽입
+        wrap.insertBefore(btn, wrap.firstChild);
+        return;
+    }
+
+    if (fallbackWrap) {
+        fallbackWrap.insertBefore(btn, tableEl);
     }
   }
+
 
   // ---------- Search request hook to force page size ----------
   // 조회값 파라미터 기본 설정.
