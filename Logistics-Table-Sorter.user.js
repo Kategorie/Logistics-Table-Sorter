@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.2
+// @version      1.2.3
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -427,6 +427,7 @@
     btn.style.cssText = [
         "display: block",
         "margin: 8px 0 10px 0",
+        "margin-right: auto",
         "padding: 6px 10px",
         "border: 1px solid #888",
         "border-radius: 6px",
