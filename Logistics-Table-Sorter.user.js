@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.10
+// @version      1.2.11
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -253,6 +253,19 @@
         const h4 = root.querySelector(".pull-right h4");
         if (!h4) return;
 
+        // 1) h4를 한 줄 정렬 컨테이너로
+        h4.style.display = "inline-flex";
+        h4.style.alignItems = "center";
+        h4.style.gap = "6px";
+
+        // 날짜 span 보정 (있다면)
+        const dateSpan = h4.querySelector("span");
+        if (dateSpan) {
+            dateSpan.style.display = "inline-flex";
+            dateSpan.style.alignItems = "center";
+            dateSpan.style.lineHeight = "1";
+        }
+
         const shown = countRenderedRows(tableEl);
 
         // "총 48건" 텍스트 노드 찾기
@@ -269,17 +282,13 @@
             prefix = document.createElement("span");
             prefix.id = uiId;
             prefix.style.cssText = [
-                "display: inline-block",
-                "margin-top: 10px",
-                "margin-bottom: 10px",
-                "margin-left: 8px",
+                "display: inline-flex",
+                "align-items: center",
                 "font-size: 18px",
                 "font-family: inherit",
                 "font-weight: 500",
-                "line-height: 1.3",
                 "color: inherit",
                 "white-space: nowrap",
-                "vertical-align: middle"
             ].join(";");
 
             // "총 48건" 텍스트 앞에 삽입
