@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.1.1
+// @version      1.1.2
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -35,6 +35,12 @@
   // tableSelector : 테이블 선택자
   // forceFirstPage : 원하면 true, 싫으면 false
   // debug : 개발 중엔 true, 배포 시 false
+
+  // debug log
+  function logDebug(...args) {
+    if (!CONFIG_OVERRIDE.debug) return;
+    console.log("[TM][Logistics]", ...args);
+  }
 
   // ---------- Replace-render safe sorter core ----------
   const TmSorter = (() => {
@@ -74,12 +80,6 @@
         if (ok) return table;
       }
       return null;
-    }
-
-    // debug log
-    function logDebug(...args) {
-      if (!CONFIG_OVERRIDE.debug) return;
-      console.log("[TM][Logistics]", ...args);
     }
 
     logDebug("running on", location.href);
