@@ -30,6 +30,7 @@
     },
     forcePageSize: 200,
     forceFirstPage: true,   // 원하면 true, 싫으면 false
+    debug: false,        // 개발 중엔 true, 배포 시 false
   };
 
   // ---------- Replace-render safe sorter core ----------
@@ -72,16 +73,22 @@
       return null;
     }
 
-    console.log("[TM] running on", location.href);  // debug log
+    function logDebug(...args) { // debug log
+      if (!CONFIG_OVERRIDE.debug) return;
+      console.log("[TM][Logistics]", ...args);
+    }
+
+
+    logDebug("running on", location.href);  // debug log
 
     function debugDumpTable(table) {  // debug log
       if (!table) {
-        console.log("[TM] table not found");
+        logDebug("table not found");
         return;
       }
       const ths = Array.from(table.querySelectorAll("thead th"));
-      console.log("[TM] found table, th count =", ths.length);
-      console.log("[TM] headers =", ths.map(th => th.textContent.replace(/\s+/g, " ").trim()));
+      logDebug("found table, th count =", ths.length);
+      logDebug("headers =", ths.map(th => th.textContent.replace(/\s+/g, " ").trim()));
     }
 
 
@@ -321,6 +328,12 @@
     return { start };
   })();
 
+  function ensureParam(params, key, defaultValue = "") {  // 조회값 파라미터 기본 설정.
+    if (!params.has(key)) {
+        params.set(key, defaultValue);
+    }
+  }
+
   function installSearchRequestHook() { // 조회값이 한 페이지에 모두 나오도록.
     const TARGET_PATH = "/async/replenish/order/search";
     const PAGE_SIZE = CONFIG_OVERRIDE.forcePageSize ?? 200;
@@ -349,6 +362,14 @@
         if (isTarget && typeof body === "string") {
             const params = new URLSearchParams(body);
 
+            // 서버가 요구하는 필수 키 보장
+            ensureParam(params, "shippingCompanyId");
+            ensureParam(params, "shippingType");
+            ensureParam(params, "shippingCutLine");
+            ensureParam(params, "skuBarcode");
+            ensureParam(params, "skuId");
+            ensureParam(params, "externalSkuId");
+
             // size 강제
             params.set("size", String(PAGE_SIZE));
 
@@ -368,5 +389,5 @@
 
   // 여기 한 줄만 실행
   TmSorter.start();
-  console.log("[TM] TmSorter.start()"); // debug log
+  logDebug("TmSorter.start()"); // debug log
 })();
