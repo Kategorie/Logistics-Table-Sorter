@@ -2,9 +2,9 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.0.1
+// @version      1.0.2
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
-// @match        https://inventory.coupang.com/replenish/order/list/*
+// @match        inventory.coupang.com/replenish/order/list/*
 // @run-at       document-idle
 // @grant        none
 // @downloadURL  https://raw.githubusercontent.com/Kategorie/Logistics-Table-Sorter/main/Logistics-Table-Sorter.user.js
