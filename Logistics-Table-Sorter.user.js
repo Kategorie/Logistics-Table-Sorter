@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.5
+// @version      1.2.6
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -237,6 +237,50 @@
       };
     }
 
+    function countRenderedRows(tableEl) {
+        if (!tableEl) return 0;
+        const tbody = tableEl.querySelector("tbody");
+        if (!tbody) return 0;
+        return tbody.querySelectorAll("tr").length;
+    }
+
+    function upsertShownPrefixBeforeTotal({ tableEl, rootId = "searchResultArea" }) {
+        const root = document.getElementById(rootId);
+        if (!root || !tableEl) return;
+
+        const h4 = root.querySelector(".pull-right h4");
+        if (!h4) return;
+
+        const shown = countRenderedRows(tableEl);
+
+        // "총 48건" 텍스트 노드 찾기
+        const totalTextNode = Array.from(h4.childNodes).find(
+            n =>
+                n.nodeType === Node.TEXT_NODE &&
+                /총\s*[0-9,]+\s*건/.test(n.nodeValue || "")
+        );
+        if (!totalTextNode) return;
+
+        const uiId = "tm-shown-prefix";
+        let prefix = h4.querySelector(`#${uiId}`);
+        if (!prefix) {
+            prefix = document.createElement("span");
+            prefix.id = uiId;
+            prefix.style.cssText = [
+                "margin-left: 8px",
+                "font-size: 12px",
+                "color: #111",
+                "white-space: nowrap",
+                "vertical-align: middle"
+            ].join(";");
+
+            // "총 48건" 텍스트 앞에 삽입
+            h4.insertBefore(prefix, totalTextNode);
+        }
+
+        prefix.textContent = `표시 ${shown}건/`;
+    }
+
     function initTableIfNeeded(table) {
       if (!table) return;
       if (table.getAttribute(CONFIG.markerAttr) === "1") return;
@@ -252,6 +296,9 @@
       // injectPanel(table, columnMap);
       // 프린트 버튼 추가
       injectPrintButton(table);
+      // 표시된 행 갯수 확인 UI 추가.
+      // 반드시 마지막에 호출 (최종적으로 화면에 보이는 tr 개수를 기준으로 표시 건수를 계산.)
+      upsertShownPrefixBeforeTotal({ tableEl: table });
 
       table.setAttribute(CONFIG.markerAttr, "1");
     }
