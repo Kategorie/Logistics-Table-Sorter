@@ -21,7 +21,7 @@
 
   // 여기에서만 조정하세요
   const CONFIG_OVERRIDE = {
-    tableSelector: 'table.table.table-bordered.table-striped',
+    tableSelector: 'table.table.table-bordered.table-striped.table-hover', // 테이블 선택자
     headerNames: {
       buffer: "버퍼수량",
       replenish: "보충수량",
