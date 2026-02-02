@@ -22,16 +22,19 @@
 
   // 여기에서만 조정.
   const CONFIG_OVERRIDE = {
-    tableSelector: 'table.table.table-bordered.table-striped.table-hover', // 테이블 선택자
+    tableSelector: 'table.table.table-bordered.table-striped.table-hover',
     headerNames: {
       buffer: "버퍼수량",
       replenish: "보충수량",
       order: "주문수량",
     },
     forcePageSize: 200,
-    forceFirstPage: true,   // 원하면 true, 싫으면 false
-    debug: false,        // 개발 중엔 true, 배포 시 false
+    forceFirstPage: true,
+    debug: false,
   };
+  // tableSelector : 테이블 선택자
+  // forceFirstPage : 원하면 true, 싫으면 false
+  // debug : 개발 중엔 true, 배포 시 false
 
   // ---------- Replace-render safe sorter core ----------
   const TmSorter = (() => {
@@ -73,14 +76,15 @@
       return null;
     }
 
-    function logDebug(...args) { // debug log
+    // debug log
+    function logDebug(...args) {
       if (!CONFIG_OVERRIDE.debug) return;
       console.log("[TM][Logistics]", ...args);
     }
 
-    logDebug("running on", location.href);  // debug log
+    logDebug("running on", location.href);
 
-    function debugDumpTable(table) {  // debug log
+    function debugDumpTable(table) {
       if (!table) {
         logDebug("table not found");
         return;
@@ -94,12 +98,13 @@
       return Array.from(table.querySelectorAll("thead th"));
     }
 
+    // 핵심 변경 : 헤더 텍스트로 열 인덱스 찾기
     function findColIndex(table, headerText) {
       const target = normalizeText(headerText);
       const ths = Array.from(table.querySelectorAll("thead th"));
       for (let i = 0; i < ths.length; i++) {
         const got = normalizeText(ths[i].textContent);
-        if (got.includes(target)) return i; // 핵심 변경
+        if (got.includes(target)) return i;
       }
       return -1;
     }
@@ -300,7 +305,7 @@
     function observeAndInit() {
       const tryInit = () => {
         const table = getLatestTable();
-        debugDumpTable(table);  // debug log
+        debugDumpTable(table);
         if (table) initTableIfNeeded(table);
       };
 
@@ -325,14 +330,16 @@
 
     return { start };
   })();
-
-  function ensureParam(params, key, defaultValue = "") {  // 조회값 파라미터 기본 설정.
+  
+  // 조회값 파라미터 기본 설정.
+  function ensureParam(params, key, defaultValue = "") {
     if (!params.has(key)) {
         params.set(key, defaultValue);
     }
   }
 
-  function installSearchRequestHook() { // 조회값이 한 페이지에 모두 나오도록.
+  // 조회값이 한 페이지에 모두 나오도록.
+  function installSearchRequestHook() {
     const TARGET_PATH = "/async/replenish/order/search";
     const PAGE_SIZE = CONFIG_OVERRIDE.forcePageSize ?? 200;
     const FORCE_FIRST = CONFIG_OVERRIDE.forceFirstPage ?? false;
@@ -387,5 +394,5 @@
 
   // 여기 한 줄만 실행
   TmSorter.start();
-  logDebug("TmSorter.start()"); // debug log
+  logDebug("TmSorter.start()");
 })();
