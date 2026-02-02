@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.0.6
+// @version      1.1.0
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -28,6 +28,8 @@
       replenish: "보충수량",
       order: "주문수량",
     },
+    forcePageSize: 200,
+    forceFirstPage: true,   // 원하면 true, 싫으면 false
   };
 
   // ---------- Replace-render safe sorter core ----------
@@ -128,8 +130,8 @@
       style.id = "tm-sort-style";
       style.textContent = `
         .tm-sort-controls{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}
-        .tm-sort-controls button{border:1px solid rgba(0,0,0,.15);background:#fff;border-radius:6px;cursor:pointer;padding:0 6px;line-height:18px;height:20px}
-        .tm-sort-controls button.tm-active{border-color:rgba(0,0,0,.35);background:rgba(0,0,0,.05);font-weight:700}
+        .tm-sort-controls button{color: #111 !important;border:1px solid rgba(0,0,0,.15);background:#fff;border-radius:6px;cursor:pointer;padding:0 6px;line-height:18px;height:20px}
+        .tm-sort-controls button.tm-active{color: #d00 !important;border-color:rgba(0,0,0,.35);background:rgba(0,0,0,.05);font-weight:700}
         .tm-sort-panel{display:inline-flex;gap:8px;align-items:center;padding:8px 10px;margin:6px 0;border:1px solid rgba(0,0,0,.12);border-radius:8px;background:#fff;font-size:12px}
         .tm-sort-panel select,.tm-sort-panel button{font-size:12px;padding:4px 6px}
       `;
@@ -318,6 +320,51 @@
 
     return { start };
   })();
+
+  function installSearchRequestHook() { // 조회값이 한 페이지에 모두 나오도록.
+    const TARGET_PATH = "/async/replenish/order/search";
+    const PAGE_SIZE = CONFIG_OVERRIDE.forcePageSize ?? 200;
+    const FORCE_FIRST = CONFIG_OVERRIDE.forceFirstPage ?? false;
+
+    const origOpen = XMLHttpRequest.prototype.open;
+    const origSend = XMLHttpRequest.prototype.send;
+
+    // 중복 설치 방지
+    if (XMLHttpRequest.prototype.__tm_size_hook_installed) return;
+    XMLHttpRequest.prototype.__tm_size_hook_installed = true;
+
+    XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+        this.__tm_url = url;
+        this.__tm_method = method;
+        return origOpen.call(this, method, url, ...rest);
+    };
+
+    XMLHttpRequest.prototype.send = function (body) {
+        try {
+        const url = String(this.__tm_url || "");
+        const isTarget =
+            url === TARGET_PATH ||
+            url.includes(TARGET_PATH);
+
+        if (isTarget && typeof body === "string") {
+            const params = new URLSearchParams(body);
+
+            // size 강제
+            params.set("size", String(PAGE_SIZE));
+
+            // 선택: 첫 페이지로 고정
+            if (FORCE_FIRST) params.set("page", "0");
+
+            body = params.toString();
+        }
+        } catch (e) {
+        // 후킹 실패해도 원 요청은 보내야 하므로 조용히 통과
+        }
+        return origSend.call(this, body);
+    };
+  }
+
+  installSearchRequestHook();
 
   // 여기 한 줄만 실행
   TmSorter.start();
