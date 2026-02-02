@@ -23,9 +23,9 @@
   const CONFIG_OVERRIDE = {
     tableSelector: 'table.table.table-bordered.table-striped',
     headerNames: {
-      buffer: "버퍼 수량",
-      replenish: "보충 수량",
-      order: "주문 수량",
+      buffer: "버퍼수량",
+      replenish: "보충수량",
+      order: "주문수량",
     },
   };
 
