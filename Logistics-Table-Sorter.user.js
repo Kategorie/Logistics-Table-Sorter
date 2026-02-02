@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.0.5
+// @version      1.0.6
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -236,7 +236,7 @@
       if (!hasAny) return;
 
       injectHeaderButtons(table, columnMap);
-      injectPanel(table, columnMap);
+      // injectPanel(table, columnMap); // 드롭다운 패널 비활성화
 
       table.setAttribute(CONFIG.markerAttr, "1");
     }
