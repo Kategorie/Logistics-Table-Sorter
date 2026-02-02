@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Logistics Table Sorter (Replace-render safe)
-// @namespace    http://tampermonkey.net/
+// @namespace    Replenish_Arin
 // @version      1.0.0
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        https://inventory.coupang.com//replenish/order/list/*
