@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.4
+// @version      1.2.5
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -415,14 +415,53 @@
   function injectPrintButton(tableEl) {
     if (!tableEl) return;
 
-    // h4
-    const headerEl = findSummaryHeaderElement();
-    const wrap = headerEl?.parentElement ?? null;
-    const fallbackWrap = tableEl.parentElement ?? null;
+    const root = document.querySelector("#searchResultArea");
+    if (!root) return;
 
-    // 중복 주입 방지: "현재 붙일 위치" 기준으로만 검사
-    if (wrap && wrap.querySelector("#tm-print-table-btn")) return;
-    if (!wrap && fallbackWrap && fallbackWrap.querySelector("#tm-print-table-btn")) return;
+    // 상단 바(controls bar) 기준으로 중복 방지
+    const barId = "tm-print-bar";
+    let bar = root.querySelector(`#${barId}`);
+
+    if (!bar) {
+        bar = document.createElement("div");
+        bar.id = barId;
+        bar.style.display = "flex";
+        bar.style.alignItems = "center";
+        bar.style.justifyContent = "space-between";
+        bar.style.gap = "8px";
+        bar.style.margin = "6px 0 8px 0";
+
+        // 좌측 영역
+        const left = document.createElement("div");
+        left.id = "tm-print-left";
+        left.style.display = "flex";
+        left.style.alignItems = "center";
+        left.style.gap = "8px";
+
+        // 우측 영역: 기존 pull-right를 그대로 담거나, 없으면 비워둠
+        const right = document.createElement("div");
+        right.id = "tm-print-right";
+        right.style.display = "flex";
+        right.style.alignItems = "center";
+        right.style.gap = "8px";
+
+        bar.appendChild(left);
+        bar.appendChild(right);
+
+        // bar를 root 맨 위에 삽입
+        root.insertBefore(bar, root.firstChild);
+
+        // 기존 pull-right가 있으면 bar의 오른쪽으로 옮김(통째로)
+        const pullRight = root.querySelector(":scope > .pull-right");
+        if (pullRight) {
+            right.appendChild(pullRight);
+            // pull-right가 float로 우측 정렬을 강제할 수 있으니 float 해제
+            pullRight.style.float = "none";
+        }
+    }
+
+    // 버튼이 이미 있으면 끝
+    if (bar.querySelector("#tm-print-table-btn")) return;
 
     const btn = document.createElement("button");
     btn.id = "tm-print-table-btn";
@@ -447,27 +486,10 @@
         openPrintWindowWithHeaderAndTable(headerElNow, tableEl, "Replenish Order Table");
     });
 
-    // 버튼 배치: 날짜/건수(h4)와 같이 정렬.
-    if (wrap) {
-        // wrap을 버튼(좌) + h4(우) 정렬로 구성
-        wrap.style.display = "flex";
-        wrap.style.alignItems = "center";
-        wrap.style.justifyContent = "space-between";
-        wrap.style.gap = "8px";
-
-        // h4는 오른쪽에 붙도록 보정(혹시 사이트 CSS가 건드릴 때 대비)
-        headerEl.style.margin = "0";
-        headerEl.style.marginLeft = "auto";
-
-        // 버튼을 wrap의 맨 앞에 삽입
-        wrap.insertBefore(btn, wrap.firstChild);
-        return;
-    }
-
-    if (fallbackWrap) {
-        fallbackWrap.insertBefore(btn, tableEl);
-    }
+    const left = bar.querySelector("#tm-print-left");
+    left.appendChild(btn);
   }
+
 
 
   // ---------- Search request hook to force page size ----------
