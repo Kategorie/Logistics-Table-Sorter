@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.8
+// @version      1.2.9
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -269,9 +269,15 @@
             prefix = document.createElement("span");
             prefix.id = uiId;
             prefix.style.cssText = [
+                "display: inline-block",
+                "margin-top: 10px",
+                "margin-bottom: 10px",
                 "margin-left: 8px",
                 "font-size: 18px",
-                "color: #111",
+                "font-family: inherit",
+                "font-weight: 500",
+                "line-height: 1.1",
+                "color: inherit",
                 "white-space: nowrap",
                 "vertical-align: middle"
             ].join(";");
@@ -280,7 +286,7 @@
             h4.insertBefore(prefix, totalTextNode);
         }
 
-        prefix.textContent = `표 ${shown}건/`;
+        prefix.textContent = `표 ${shown}건`;
     }
 
     function initTableIfNeeded(table) {
