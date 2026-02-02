@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.1.0
+// @version      1.1.1
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -78,7 +78,6 @@
       console.log("[TM][Logistics]", ...args);
     }
 
-
     logDebug("running on", location.href);  // debug log
 
     function debugDumpTable(table) {  // debug log
@@ -90,7 +89,6 @@
       logDebug("found table, th count =", ths.length);
       logDebug("headers =", ths.map(th => th.textContent.replace(/\s+/g, " ").trim()));
     }
-
 
     function getHeaderCells(table) {
       return Array.from(table.querySelectorAll("thead th"));
