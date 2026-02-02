@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.7
+// @version      1.2.8
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -237,6 +237,7 @@
       };
     }
 
+    // 화면에 렌더된 행 개수 세기
     function countRenderedRows(tableEl) {
         if (!tableEl) return 0;
         const tbody = tableEl.querySelector("tbody");
@@ -244,6 +245,7 @@
         return tbody.querySelectorAll("tr").length;
     }
 
+    // "총 XX건" 앞에 "표 YY건/" 추가
     function upsertShownPrefixBeforeTotal({ tableEl, rootId = "searchResultArea" }) {
         const root = document.getElementById(rootId);
         if (!root || !tableEl) return;
