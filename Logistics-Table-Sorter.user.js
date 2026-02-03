@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.12
+// @version      1.2.13
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -263,7 +263,7 @@
         if (dateSpan) {
             dateSpan.style.display = "inline-flex";
             dateSpan.style.alignItems = "center";
-            dateSpan.style.lineHeight = "1";
+            dateSpan.style.lineHeight = "1.1";
         }
 
         const shown = countRenderedRows(tableEl);
