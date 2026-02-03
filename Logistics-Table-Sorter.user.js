@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.11
+// @version      1.2.12
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
@@ -256,7 +256,7 @@
         // 1) h4를 한 줄 정렬 컨테이너로
         h4.style.display = "inline-flex";
         h4.style.alignItems = "center";
-        h4.style.gap = "6px";
+        h4.style.gap = "4px";
 
         // 날짜 span 보정 (있다면)
         const dateSpan = h4.querySelector("span");
@@ -284,10 +284,6 @@
             prefix.style.cssText = [
                 "display: inline-flex",
                 "align-items: center",
-                "font-size: 18px",
-                "font-family: inherit",
-                "font-weight: 500",
-                "color: inherit",
                 "white-space: nowrap",
             ].join(";");
 
