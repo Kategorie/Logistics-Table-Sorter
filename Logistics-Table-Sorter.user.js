@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.15
+// @version      1.2.16
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        https://inventory.coupang.com/replenish/order/list*
 // @match        http://inventory.coupang.com/replenish/order/list*
@@ -13,7 +13,6 @@
 
 // ==/UserScript==
 
-// match 주의할 것. 기본 형태 https://.../*
 // version 매 번 올릴 것. 그래야 적용됨.
 // namespace, downloadURL, updateURL 고정.
 // 개발자 모드 + 확/프 세부정보-사용자 스크립트 허용 체크 필요.
@@ -32,12 +31,13 @@
     forcePageSize: 200,
     forceFirstPage: true,
     debug: true,
+    debugTableDump: false,
   };
   // tableSelector : 테이블 선택자
   // forceFirstPage : 원하면 true, 싫으면 false
   // debug : 개발 중엔 true, 배포 시 false
 
-  // debug log
+  // ---------- Debug logging ----------
   function logDebug(...args) {
     if (!CONFIG_OVERRIDE.debug) return;
     console.log("[TM][Logistics]", ...args);
@@ -85,7 +85,8 @@
 
     logDebug("running on", location.href);
 
-    function debugDumpTable(table) {
+    function debugTableDump(table) {
+      if (!CONFIG_OVERRIDE.debugTableDump) return;
       if (!table) {
         logDebug("table not found");
         return;
@@ -293,6 +294,7 @@
         }
 
         prefix.textContent = `표 ${shown}건/`;
+        logDebug("count check", { shown, totalParsed });
     }
 
     function initTableIfNeeded(table) {
@@ -302,6 +304,7 @@
       ensureStyles();
 
       const columnMap = computeColumnMap(table);
+      logDebug("columnMap", columnMap);
       const hasAny = Object.values(columnMap).some(i => i >= 0);
       if (!hasAny) return;
 
@@ -369,7 +372,8 @@
     function observeAndInit() {
       const tryInit = () => {
         const table = getLatestTable();
-        debugDumpTable(table);
+        debugTableDump(table);
+        logDebug("table probe", { found: !!table, th: table ? table.querySelectorAll("thead th").length : 0 });
         if (table) initTableIfNeeded(table);
       };
 
@@ -582,35 +586,37 @@
 
     XMLHttpRequest.prototype.send = function (body) {
         try {
-        const url = String(this.__tm_url || "");
-        const isTarget =
-            url === TARGET_PATH ||
-            url.includes(TARGET_PATH);
+          const url = String(this.__tm_url || "");
+          const isTarget =
+              url === TARGET_PATH ||
+              url.includes(TARGET_PATH);
 
-        if (isTarget && typeof body === "string") {
-            const params = new URLSearchParams(body);
+          if (isTarget && typeof body === "string") {
+              const params = new URLSearchParams(body);
 
-            // 서버가 요구하는 필수 키 보장
-            ensureParam(params, "shippingCompanyId");
-            ensureParam(params, "shippingType");
-            ensureParam(params, "shippingCutLine");
-            ensureParam(params, "skuBarcode");
-            ensureParam(params, "skuId");
-            ensureParam(params, "externalSkuId");
+              // 서버가 요구하는 필수 키 보장
+              ensureParam(params, "shippingCompanyId");
+              ensureParam(params, "shippingType");
+              ensureParam(params, "shippingCutLine");
+              ensureParam(params, "skuBarcode");
+              ensureParam(params, "skuId");
+              ensureParam(params, "externalSkuId");
 
-            // size 강제
-            params.set("size", String(PAGE_SIZE));
+              // size 강제
+              params.set("size", String(PAGE_SIZE));
 
-            // 선택: 첫 페이지로 고정
-            if (FORCE_FIRST) params.set("page", "0");
+              // 선택: 첫 페이지로 고정
+              if (FORCE_FIRST) params.set("page", "0");
 
-            body = params.toString();
-        }
+              body = params.toString();
+          }
         } catch (e) {
         // 후킹 실패해도 원 요청은 보내야 하므로 조용히 통과
         }
+        logDebug("hook applied", { url: url.slice(-80), page: params.get("page"), size: params.get("size") });
         return origSend.call(this, body);
     };
+    logDebug("hook installed", { target: TARGET_PATH, size: PAGE_SIZE, forceFirst: FORCE_FIRST });
   }
 
   installSearchRequestHook();
