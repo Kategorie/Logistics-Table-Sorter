@@ -55,7 +55,7 @@
     };
 
     function normalizeText(s) {
-      return (s ?? "").replace(/\s+/g, " ").trim();
+      return (s ?? "").replace(/\s+/g, "").trim();
     }
 
     function parseNumber(text) {
@@ -253,7 +253,10 @@
         if (!root || !tableEl) return;
 
         const h4 = root.querySelector(".pull-right h4");
-        if (!h4) return;
+        if (!h4) {
+          if (CONFIG_OVERRIDE.debug) logDebug("shown/total ui skipped: h4 not found", { rootId });
+          return;
+        }
 
         // 1) h4를 한 줄 정렬 컨테이너로
         h4.style.display = "inline-flex";
@@ -597,6 +600,12 @@
               url === TARGET_PATH ||
               url.includes(TARGET_PATH);
 
+          if (isTarget && typeof body !== "string") {
+            logDebug("hook skipped: non-string body", {
+              bodyType: Object.prototype.toString.call(body),
+            });
+          }
+
           if (isTarget && typeof body === "string") {
               const params = new URLSearchParams(body);
 
@@ -615,14 +624,15 @@
               if (FORCE_FIRST) params.set("page", "0");
 
               body = params.toString();
+
               logDebug("hook applied", {
-                url: String(this.__tm_url || "").slice(-80),
                 page: params.get("page"),
                 size: params.get("size"),
               });
           }
         } catch (e) {
-        // 후킹 실패해도 원 요청은 보내야 하므로 조용히 통과
+          // 후킹 실패해도 원 요청은 보내야 하므로 조용히 통과
+          logDebug("hook error", { message: String(e && e.message ? e.message : e) });
         }
         return origSend.call(this, body);
     };
