@@ -22,7 +22,7 @@
 
   // 여기에서만 조정.
   const CONFIG_OVERRIDE = {
-    tableSelector: 'table.table.table-bordered.table-striped.table-hover',
+    tableSelector: 'table.table-bordered.table-striped.table-hover',
     headerNames: {
       buffer: "버퍼수량",
       replenish: "보충수량",
@@ -294,7 +294,13 @@
         }
 
         prefix.textContent = `표 ${shown}건/`;
-        logDebug("count check", { shown, totalParsed });
+
+        // debug log
+        if (CONFIG_OVERRIDE.debug) {
+          const m = (totalTextNode.nodeValue || "").match(/총\s*([0-9,]+)\s*건/);
+          const totalParsed = m ? Number(m[1].replaceAll(",", "")) : null;
+          logDebug("count check", { shown, totalParsed });
+        }
     }
 
     function initTableIfNeeded(table) {
@@ -609,11 +615,15 @@
               if (FORCE_FIRST) params.set("page", "0");
 
               body = params.toString();
+              logDebug("hook applied", {
+                url: String(this.__tm_url || "").slice(-80),
+                page: params.get("page"),
+                size: params.get("size"),
+              });
           }
         } catch (e) {
         // 후킹 실패해도 원 요청은 보내야 하므로 조용히 통과
         }
-        logDebug("hook applied", { url: url.slice(-80), page: params.get("page"), size: params.get("size") });
         return origSend.call(this, body);
     };
     logDebug("hook installed", { target: TARGET_PATH, size: PAGE_SIZE, forceFirst: FORCE_FIRST });
