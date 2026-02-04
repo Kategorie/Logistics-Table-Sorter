@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.16
+// @version      1.2.17
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
 // @match        https://inventory.coupang.com/replenish/order/list*
 // @match        http://inventory.coupang.com/replenish/order/list*
@@ -13,6 +13,7 @@
 
 // ==/UserScript==
 
+// TM = Tampermonkey
 // version 매 번 올릴 것. 그래야 적용됨.
 // namespace, downloadURL, updateURL 고정.
 // 개발자 모드 + 확/프 세부정보-사용자 스크립트 허용 체크 필요.
@@ -28,13 +29,13 @@
       replenish: "보충수량",
       order: "주문수량",
     },
-    forcePageSize: 200,
+    forcePageSize: 300,
     forceFirstPage: true,
-    debug: true,
+    debug: false,
     debugTableDump: false,
   };
   // tableSelector : 테이블 선택자
-  // forceFirstPage : 원하면 true, 싫으면 false
+  // forceFirstPage : 항상 첫 페이지부터 다시 조회
   // debug : 개발 중엔 true, 배포 시 false
 
   // ---------- Debug logging ----------
@@ -578,7 +579,7 @@
   function installSearchRequestHook() {
     const TARGET_PATH = "/async/replenish/order/search";
     const PAGE_SIZE = CONFIG_OVERRIDE.forcePageSize ?? 200;
-    const FORCE_FIRST = CONFIG_OVERRIDE.forceFirstPage ?? false;
+    const FORCE_FIRST = CONFIG_OVERRIDE.forceFirstPage ?? true;
 
     const origOpen = XMLHttpRequest.prototype.open;
     const origSend = XMLHttpRequest.prototype.send;
