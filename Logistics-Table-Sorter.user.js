@@ -2,9 +2,10 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.13
+// @version      1.2.14
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
-// @match        inventory.coupang.com/replenish/order/list
+// @match        https://inventory.coupang.com/replenish/order/list*
+// @match        http://inventory.coupang.com/replenish/order/list*
 // @run-at       document-idle
 // @grant        none
 // @downloadURL  https://raw.githubusercontent.com/Kategorie/Logistics-Table-Sorter/main/Logistics-Table-Sorter.user.js
@@ -19,6 +20,11 @@
 
 (function () {
   "use strict";
+
+  // 현재 경로가 대상이 아니면 종료.
+  if (!location.pathname.startsWith("/replenish/order/list")) {
+    return;
+  }
 
   // 여기에서만 조정.
   const CONFIG_OVERRIDE = {
