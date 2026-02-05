@@ -3,7 +3,7 @@
 // @namespace    Replenish_Arin
 // @author       Kategorie
 // @version      1.2.18
-// @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
+// @description  Sort columns even when the server re-renders the whole table.
 // @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
 // @grant        none
