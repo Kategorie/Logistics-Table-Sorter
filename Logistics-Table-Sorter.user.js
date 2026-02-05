@@ -2,10 +2,9 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.17
+// @version      1.2.18
 // @description  Sort buffer/replenish/order columns even when the server re-renders the whole table.
-// @match        https://inventory.coupang.com/replenish/order/list*
-// @match        http://inventory.coupang.com/replenish/order/list*
+// @match        inventory.coupang.com/replenish/order/list
 // @run-at       document-idle
 // @grant        none
 // @downloadURL  https://raw.githubusercontent.com/Kategorie/Logistics-Table-Sorter/main/Logistics-Table-Sorter.user.js
@@ -17,6 +16,8 @@
 // version 매 번 올릴 것. 그래야 적용됨.
 // namespace, downloadURL, updateURL 고정.
 // 개발자 모드 + 확/프 세부정보-사용자 스크립트 허용 체크 필요.
+// https://inventory.coupang.com/replenish/order/list*
+// http://inventory.coupang.com/replenish/order/list*
 
 (function () {
   "use strict";
