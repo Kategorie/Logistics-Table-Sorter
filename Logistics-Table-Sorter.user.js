@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.3.3
+// @version      1.3.4
 // @description  Sort columns even when the server re-renders the whole table.
 // @match        https://inventory.coupang.com/replenish/order/list*
 // @match        http://inventory.coupang.com/replenish/order/list*
@@ -56,7 +56,7 @@
   const TmSorter = (() => {
     "use strict";
 
-    logDebug("[TM][Logistics] loaded v1.3.3", location.href);
+    logDebug("[TM][Logistics] loaded v1.3.4", location.href);
 
     const CONFIG = {
       tableSelector: CONFIG_OVERRIDE.tableSelector,
@@ -136,7 +136,7 @@
         .map((row, idx) => ({ row, idx, key: getKey(row) }))
         .sort((a, b) => {
           if (a.key < b.key) return -1 * dir;
-          if (a.key > b.key) return  1 * dir;
+          if (a.key > b.key) return 1 * dir;
           // 동률이면 항상 원래 순서 유지
           return a.idx - b.idx;
         })
@@ -592,7 +592,7 @@
 
     btn.addEventListener("click", () => {
       const headerElNow = findSummaryHeaderElement();
-      const latestTable = (typeof getLatestTableFn  === "function") ? getLatestTableFn() : tableEl;
+      const latestTable = (typeof getLatestTableFn === "function") ? getLatestTableFn() : tableEl;
       openPrintWindowWithHeaderAndTable(headerElNow, latestTable, "Replenish Order Table");
     });
 
