@@ -31,7 +31,7 @@
     },
     forcePageSize: 300,
     forceFirstPage: true,
-    debug: true,
+    debug: false,
     debugTableDump: false,
     xhrMatch: (url) => {
       try {
