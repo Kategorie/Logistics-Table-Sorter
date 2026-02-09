@@ -56,7 +56,7 @@
   const TmSorter = (() => {
     "use strict";
 
-    console.info("[TM][Logistics] loaded v1.3.1", location.href);
+    logDebug("[TM][Logistics] loaded v1.3.2", location.href);
 
     const CONFIG = {
       tableSelector: CONFIG_OVERRIDE.tableSelector,
