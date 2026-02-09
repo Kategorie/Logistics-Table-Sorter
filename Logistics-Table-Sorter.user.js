@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.3.1
+// @version      1.3.2
 // @description  Sort columns even when the server re-renders the whole table.
 // @match        https://inventory.coupang.com/replenish/order/list*
 // @match        http://inventory.coupang.com/replenish/order/list*
@@ -36,7 +36,7 @@
     xhrMatch: (url) => {
       try {
         const u = new URL(url, location.href);
-        return u.pathname.includes("/replenish/order/list/");
+        return /^\/async\/replenish\/order\/search\/?$/.test(u.pathname);
       } catch {
         return false;
       }
