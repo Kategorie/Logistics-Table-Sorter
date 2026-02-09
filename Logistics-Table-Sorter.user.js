@@ -118,7 +118,8 @@
 
       for (let i = 0; i < ths.length; i++) {
         const got = normalizeText(ths[i].textContent);
-        if (got === target) return i;        // 완전 일치 우선
+        // 완전 일치 우선
+        if (got === target) return i;
         if (fallback === -1 && got.includes(target)) fallback = i;
       }
       return fallback;
@@ -136,7 +137,8 @@
         .sort((a, b) => {
           if (a.key < b.key) return -1 * dir;
           if (a.key > b.key) return  1 * dir;
-          return a.idx - b.idx; // 동률이면 항상 원래 순서 유지
+          // 동률이면 항상 원래 순서 유지
+          return a.idx - b.idx;
         })
         .map(x => x.row);
     }
@@ -338,7 +340,7 @@
       // 드롭다운 패널 비활성화
       // injectPanel(table, columnMap);
       // 프린트 버튼 추가
-      injectPrintButton(table);
+      injectPrintButton(table, () => getLatestTable());
       // 표시된 행 갯수 확인 UI 추가.
       // 반드시 마지막에 호출 (최종적으로 화면에 보이는 tr 개수를 기준으로 표시 건수를 계산.)
       upsertShownPrefixBeforeTotal({ tableEl: table });
@@ -520,7 +522,7 @@
       .replaceAll("'", "&#39;");
   }
 
-  function injectPrintButton(tableEl) {
+  function injectPrintButton(tableEl, getLatestTableFn) {
     if (!tableEl) return;
 
     const root = document.querySelector("#searchResultArea");
@@ -590,7 +592,7 @@
 
     btn.addEventListener("click", () => {
       const headerElNow = findSummaryHeaderElement();
-      const latestTable = (typeof getLatestTable === "function") ? getLatestTable() : tableEl;
+      const latestTable = (typeof getLatestTableFn  === "function") ? getLatestTableFn() : tableEl;
       openPrintWindowWithHeaderAndTable(headerElNow, latestTable, "Replenish Order Table");
     });
 
@@ -625,7 +627,8 @@
    */
   function patchUrlQuery(url, patchMap, opts = {}) {
     const {
-      allowAdd = false,   // false면 원래 없던 키는 추가하지 않음
+      // false면 원래 없던 키는 추가하지 않음
+      allowAdd = false,
       keepHash = true,
     } = opts;
 
