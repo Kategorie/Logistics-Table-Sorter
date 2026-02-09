@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.2.19
+// @version      1.3.1
 // @description  Sort columns even when the server re-renders the whole table.
 // @match        https://inventory.coupang.com/replenish/order/list*
 // @match        http://inventory.coupang.com/replenish/order/list*
@@ -31,8 +31,16 @@
     },
     forcePageSize: 300,
     forceFirstPage: true,
-    debug: false,
+    debug: true,
     debugTableDump: false,
+    xhrMatch: (url) => {
+      try {
+        const u = new URL(url, location.href);
+        return u.pathname.includes("/replenish/order/list/");
+      } catch {
+        return false;
+      }
+    },
   };
   // tableSelector : 테이블 선택자
   // forceFirstPage : 항상 첫 페이지부터 다시 조회
@@ -47,6 +55,8 @@
   // ---------- Replace-render safe sorter core ----------
   const TmSorter = (() => {
     "use strict";
+
+    console.info("[TM][Logistics] loaded v1.3.1", location.href);
 
     const CONFIG = {
       tableSelector: CONFIG_OVERRIDE.tableSelector,
@@ -70,15 +80,14 @@
     function getLatestTable() {
       const targets = Object.values(CONFIG.headerNames).map(normalizeText);
 
-      const tables = Array.from(document.querySelectorAll("table"));
-      for (const table of tables) {
+      const primary = Array.from(document.querySelectorAll(CONFIG.tableSelector));
+      const all = primary.length ? primary : Array.from(document.querySelectorAll("table"));
+
+      for (const table of all) {
         const ths = Array.from(table.querySelectorAll("thead th"));
         if (!ths.length) continue;
-
         const headers = ths.map(th => normalizeText(th.textContent));
-        const headerLine = headers.join(" | ");
-
-        const ok = targets.every(t => headerLine.includes(t));
+        const ok = targets.every(t => headers.some(h => h.includes(t)));
         if (ok) return table;
       }
       return null;
@@ -105,11 +114,14 @@
     function findColIndex(table, headerText) {
       const target = normalizeText(headerText);
       const ths = Array.from(table.querySelectorAll("thead th"));
+      let fallback = -1;
+
       for (let i = 0; i < ths.length; i++) {
         const got = normalizeText(ths[i].textContent);
-        if (got.includes(target)) return i;
+        if (got === target) return i;        // 완전 일치 우선
+        if (fallback === -1 && got.includes(target)) fallback = i;
       }
-      return -1;
+      return fallback;
     }
 
     function readCellNumber(row, colIndex) {
@@ -121,7 +133,11 @@
       const dir = direction === "desc" ? -1 : 1;
       return rows
         .map((row, idx) => ({ row, idx, key: getKey(row) }))
-        .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : a.idx - b.idx) * dir)
+        .sort((a, b) => {
+          if (a.key < b.key) return -1 * dir;
+          if (a.key > b.key) return  1 * dir;
+          return a.idx - b.idx; // 동률이면 항상 원래 순서 유지
+        })
         .map(x => x.row);
     }
 
@@ -380,25 +396,42 @@
     }
 
     function observeAndInit() {
+      if (window.__tmSorterObserverInstalled) return;
+      window.__tmSorterObserverInstalled = true;
+
+      let scheduled = false;
+      let mo = null;
+
       const tryInit = () => {
         const table = getLatestTable();
-        debugTableDump(table);
-        logDebug("table probe", { found: !!table, th: table ? table.querySelectorAll("thead th").length : 0 });
-        if (table) initTableIfNeeded(table);
+        const thCount = table ? table.querySelectorAll("thead th").length : 0;
+        const hasTbody = !!(table && table.querySelector("tbody"));
+        logDebug("table probe", { found: !!table, th: thCount, hasTbody });
+
+        if (table && thCount > 0 && hasTbody) {
+          initTableIfNeeded(table);
+        }
+      };
+
+      const schedule = () => {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+          scheduled = false;
+          tryInit();
+          // searchResultArea가 잡히면 observe 범위를 좁힘
+          const area = document.getElementById("searchResultArea");
+          if (area && mo) {
+            mo.disconnect();
+            mo.observe(area, { childList: true, subtree: true });
+          }
+        });
       };
 
       tryInit();
 
-      const mo = new MutationObserver(() => {
-        if (window.__tmSorterInitScheduled) return;
-        window.__tmSorterInitScheduled = true;
-        requestAnimationFrame(() => {
-          window.__tmSorterInitScheduled = false;
-          tryInit();
-        });
-      });
-
-      mo.observe(document.body, { childList: true, subtree: true });
+      mo = new MutationObserver(schedule);
+      mo.observe(document.documentElement, { childList: true, subtree: true });
     }
 
     function start() {
@@ -556,93 +589,113 @@
     ].join(";");
 
     btn.addEventListener("click", () => {
-        // 클릭 시점에 최신 헤더와 최신 테이블을 다시 잡아 출력하는 게 안전.
-        const headerElNow = findSummaryHeaderElement();
-        openPrintWindowWithHeaderAndTable(headerElNow, tableEl, "Replenish Order Table");
+      const headerElNow = findSummaryHeaderElement();
+      const latestTable = (typeof getLatestTable === "function") ? getLatestTable() : tableEl;
+      openPrintWindowWithHeaderAndTable(headerElNow, latestTable, "Replenish Order Table");
     });
 
     const left = bar.querySelector("#tm-print-left");
     left.appendChild(btn);
   }
 
+  // ---------- Lifecycle kick ----------
+  // 페이지 복원, 포커스 복귀, SPA 내비게이션 시도 시 정렬 재시작.
+  function installLifecycleKick() {
+    const kick = () => {
+      try { TmSorter.start(); } catch (e) {}
+    };
 
+    // bfcache 복원 포함
+    window.addEventListener("pageshow", () => kick(), true);
+    window.addEventListener("focus", () => kick(), true);
+
+    // SPA 내비게이션 대응
+    const _push = history.pushState;
+    history.pushState = function (...args) { const r = _push.apply(this, args); kick(); return r; };
+    const _rep = history.replaceState;
+    history.replaceState = function (...args) { const r = _rep.apply(this, args); kick(); return r; };
+    window.addEventListener("popstate", kick, true);
+  }
 
   // ---------- Search request hook to force page size ----------
-  // 조회값 파라미터 기본 설정.
-  function ensureParam(params, key, defaultValue = "") {
-    if (!params.has(key)) {
-        params.set(key, defaultValue);
+  /**
+   * URL 문자열에서 특정 쿼리 파라미터만 안전하게 덮어씀.
+   * - 기존에 없던 파라미터를 추가할 수도 있지만, 기본은 "덮어쓰기만" 하도록 옵션화
+   * - 나머지 파라미터는 절대 건드리지 않음
+   */
+  function patchUrlQuery(url, patchMap, opts = {}) {
+    const {
+      allowAdd = false,   // false면 원래 없던 키는 추가하지 않음
+      keepHash = true,
+    } = opts;
+
+    // 상대경로도 처리
+    const u = new URL(url, location.href);
+    const sp = u.searchParams;
+
+    for (const [k, v] of Object.entries(patchMap)) {
+      if (sp.has(k) || allowAdd) sp.set(k, String(v));
     }
+
+    // URL 객체는 hash도 포함하므로 별도 처리 불필요하지만,
+    // 혹시 정책상 hash 제거가 필요하면 옵션 처리
+    if (!keepHash) u.hash = "";
+
+    return u.toString();
   }
 
   // 조회값이 한 페이지에 모두 나오도록.
+  /**
+ * XHR send 후킹: 특정 엔드포인트에 대해서만 page/size만 강제
+ * - '없던 파라미터를 추가'하지 않음(기본)
+ * - 요청 본문(body) / headers 건드리지 않음
+ * - GET/POST 모두 URL에 쿼리가 있는 경우만 패치
+ */
   function installSearchRequestHook() {
-    const TARGET_PATH = "/async/replenish/order/search";
-    const PAGE_SIZE = CONFIG_OVERRIDE.forcePageSize ?? 200;
-    const FORCE_FIRST = CONFIG_OVERRIDE.forceFirstPage ?? true;
+    if (window.__tmXhrHookInstalled) return;
+    window.__tmXhrHookInstalled = true;
 
-    const origOpen = XMLHttpRequest.prototype.open;
-    const origSend = XMLHttpRequest.prototype.send;
+    const OriginalOpen = XMLHttpRequest.prototype.open;
 
-    // 중복 설치 방지
-    if (XMLHttpRequest.prototype.__tm_size_hook_installed) return;
-    XMLHttpRequest.prototype.__tm_size_hook_installed = true;
+    // "order/list 화면"에서 발생하는 데이터 조회 호출만 체크.
+    // pathname에 xhrMatch가 포함된 요청만 대상.
+    const match = CONFIG_OVERRIDE.xhrMatch;
 
-    XMLHttpRequest.prototype.open = function (method, url, ...rest) {
-        this.__tm_url = url;
-        this.__tm_method = method;
-        return origOpen.call(this, method, url, ...rest);
+    // page/size만 최소 개입으로 덮어쓰기
+    const buildPatch = () => {
+      const size = Math.min(Number(CONFIG_OVERRIDE.forcePageSize) || 300, 300);
+      const patch = { size };
+      if (CONFIG_OVERRIDE.forceFirstPage) patch.page = 1;
+      return patch;
     };
 
-    XMLHttpRequest.prototype.send = function (body) {
-        try {
-          const url = String(this.__tm_url || "");
-          const isTarget =
-              url === TARGET_PATH ||
-              url.includes(TARGET_PATH);
+    XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
+      try {
+        const urlStr = String(url ?? "");
+        if (urlStr && match(urlStr)) {
+          const patched = patchUrlQuery(urlStr, buildPatch(), {
+            allowAdd: false, // 원래 없던 파라미터는 추가하지 않는 것이 안전
+            keepHash: true,
+          });
 
-          if (isTarget && typeof body !== "string") {
-            logDebug("hook skipped: non-string body", {
-              bodyType: Object.prototype.toString.call(body),
-            });
+          if (patched !== urlStr) {
+            logDebug("XHR url patched", { from: urlStr, to: patched });
           }
 
-          if (isTarget && typeof body === "string") {
-              const params = new URLSearchParams(body);
-
-              // 서버가 요구하는 필수 키 보장
-              ensureParam(params, "shippingCompanyId");
-              ensureParam(params, "shippingType");
-              ensureParam(params, "shippingCutLine");
-              ensureParam(params, "skuBarcode");
-              ensureParam(params, "skuId");
-              ensureParam(params, "externalSkuId");
-
-              // size 강제
-              params.set("size", String(PAGE_SIZE));
-
-              // 선택: 첫 페이지로 고정
-              if (FORCE_FIRST) params.set("page", "0");
-
-              body = params.toString();
-
-              logDebug("hook applied", {
-                page: params.get("page"),
-                size: params.get("size"),
-              });
-          }
-        } catch (e) {
-          // 후킹 실패해도 원 요청은 보내야 하므로 조용히 통과
-          logDebug("hook error", { message: String(e && e.message ? e.message : e) });
+          return OriginalOpen.call(this, method, patched, async, user, password);
         }
-        return origSend.call(this, body);
+      } catch (e) {
+        logDebug("XHR hook open error", e);
+      }
+
+      return OriginalOpen.call(this, method, url, async, user, password);
     };
-    logDebug("hook installed", { target: TARGET_PATH, size: PAGE_SIZE, forceFirst: FORCE_FIRST });
   }
 
   installSearchRequestHook();
 
   // 여기 한 줄만 실행
   TmSorter.start();
+  installLifecycleKick();
   logDebug("TmSorter.start()");
 })();
