@@ -654,7 +654,6 @@
   // 조회값이 한 페이지에 모두 나오도록.
   /**
  * XHR send 후킹: 특정 엔드포인트에 대해서만 page/size만 강제
- * - '없던 파라미터를 추가'하지 않음(기본)
  * - 요청 본문(body) / headers 건드리지 않음
  * - GET/POST 모두 URL에 쿼리가 있는 경우만 패치
  */
@@ -674,7 +673,7 @@
     const buildPatch = () => {
       const size = Math.min(Number(CONFIG_OVERRIDE.forcePageSize) || 300, 300);
       const patch = { size };
-      
+
       if (CONFIG_OVERRIDE.forceFirstPage) patch.page = 0;
       return patch;
     };
