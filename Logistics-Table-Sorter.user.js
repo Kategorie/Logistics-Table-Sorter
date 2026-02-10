@@ -34,9 +34,9 @@
     },
     forcePageSize: 300,
     forceFirstPage: true,
-    debug: true,
-    debugTableDump: true,
-    disableNetworkHook: true,
+    debug: false,
+    debugTableDump: false,
+    disableNetworkHook: false,
     xhrMatch: (url) => {
       try {
         const u = new URL(url, location.href);
