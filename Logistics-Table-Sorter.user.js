@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.3.5
+// @version      1.3.6
 // @description  Sort columns even when the server re-renders the whole table.
 // @match        https://inventory.coupang.com/replenish/order/list*
 // @match        http://inventory.coupang.com/replenish/order/list*
@@ -17,6 +17,9 @@
 // version 매 번 올릴 것. 그래야 적용됨.
 // namespace, downloadURL, updateURL 고정.
 // 개발자 모드 + 확/프 세부정보-사용자 스크립트 허용 체크 필요.
+
+//  이 스크립트는 서버가 허용한 조회 파라미터(size)를 사용해 화면 표시를 개선합니다. 
+//  권한이 없는 데이터에 접근하지 않으며, 서버 상한을 초과하지 않습니다.
 
 (function () {
   "use strict";
@@ -33,6 +36,7 @@
     forceFirstPage: true,
     debug: true,
     debugTableDump: true,
+    disableNetworkHook: true,
     xhrMatch: (url) => {
       try {
         const u = new URL(url, location.href);
@@ -56,7 +60,7 @@
   const TmSorter = (() => {
     "use strict";
 
-    logDebug("loaded v1.3.4", location.href);
+    logDebug("loaded v1.3.6", location.href);
 
     const CONFIG = {
       tableSelector: CONFIG_OVERRIDE.tableSelector,
@@ -655,6 +659,10 @@
  * - GET/POST 모두 URL에 쿼리가 있는 경우만 패치
  */
   function installSearchRequestHook() {
+    if (CONFIG_OVERRIDE.disableNetworkHook) {
+      logDebug("XHR hook disabled by config");
+      return;
+    }
     if (window.__tmXhrHookInstalled) return;
     window.__tmXhrHookInstalled = true;
 
