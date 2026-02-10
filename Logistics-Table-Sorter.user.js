@@ -2,7 +2,7 @@
 // @name         Logistics Table Sorter (Replace-render safe)
 // @namespace    Replenish_Arin
 // @author       Kategorie
-// @version      1.3.4
+// @version      1.3.5
 // @description  Sort columns even when the server re-renders the whole table.
 // @match        https://inventory.coupang.com/replenish/order/list*
 // @match        http://inventory.coupang.com/replenish/order/list*
@@ -31,8 +31,8 @@
     },
     forcePageSize: 300,
     forceFirstPage: true,
-    debug: false,
-    debugTableDump: false,
+    debug: true,
+    debugTableDump: true,
     xhrMatch: (url) => {
       try {
         const u = new URL(url, location.href);
@@ -56,7 +56,7 @@
   const TmSorter = (() => {
     "use strict";
 
-    logDebug("[TM][Logistics] loaded v1.3.4", location.href);
+    logDebug("loaded v1.3.4", location.href);
 
     const CONFIG = {
       tableSelector: CONFIG_OVERRIDE.tableSelector,
@@ -659,39 +659,118 @@
     window.__tmXhrHookInstalled = true;
 
     const OriginalOpen = XMLHttpRequest.prototype.open;
+    const OriginalSend = XMLHttpRequest.prototype.send;
 
-    // "order/list 화면"에서 발생하는 데이터 조회 호출만 체크.
-    // pathname에 xhrMatch가 포함된 요청만 대상.
     const match = CONFIG_OVERRIDE.xhrMatch;
 
-    // page/size만 최소 개입으로 덮어쓰기
     const buildPatch = () => {
       const size = Math.min(Number(CONFIG_OVERRIDE.forcePageSize) || 300, 300);
       const patch = { size };
-      if (CONFIG_OVERRIDE.forceFirstPage) patch.page = 1;
+      // 서버가 0-based page면 0이 맞을 수 있습니다.
+      // 지금은 기존 코드가 1을 쓰고 있으니 유지하되, 필요 시 0으로 바꾸세요.
+      if (CONFIG_OVERRIDE.forceFirstPage) patch.page = 0;
       return patch;
     };
+
+    function tryPatchJsonBody(bodyText, patch) {
+      try {
+        const obj = JSON.parse(bodyText);
+        let changed = false;
+        for (const [k, v] of Object.entries(patch)) {
+          if (obj[k] !== v) { obj[k] = v; changed = true; }
+        }
+        return changed ? JSON.stringify(obj) : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function tryPatchUrlEncodedBody(bodyText, patch) {
+      try {
+        const sp = new URLSearchParams(bodyText);
+        let changed = false;
+        for (const [k, v] of Object.entries(patch)) {
+          if (sp.get(k) !== String(v)) { sp.set(k, String(v)); changed = true; }
+        }
+        return changed ? sp.toString() : null;
+      } catch {
+        return null;
+      }
+    }
 
     XMLHttpRequest.prototype.open = function (method, url, async, user, password) {
       try {
         const urlStr = String(url ?? "");
-        if (urlStr && match(urlStr)) {
-          const patched = patchUrlQuery(urlStr, buildPatch(), {
-            allowAdd: false, // 원래 없던 파라미터는 추가하지 않는 것이 안전
-            keepHash: true,
-          });
+        this.__tmShouldPatch = !!(urlStr && match(urlStr));
+        this.__tmUrlForDebug = urlStr;
 
-          if (patched !== urlStr) {
-            logDebug("XHR url patched", { from: urlStr, to: patched });
+        if (this.__tmShouldPatch) {
+          // URL 쿼리는 "있으면 덮어쓰기"만(안전)
+          const patchedUrl = patchUrlQuery(urlStr, buildPatch(), { allowAdd: false, keepHash: true });
+
+          // 가짜 로그 방지: 쿼리만 비교
+          const before = new URL(urlStr, location.href);
+          const after  = new URL(patchedUrl, location.href);
+          if (before.search !== after.search) {
+            logDebug("XHR query patched", { from: before.search, to: after.search, url: after.pathname });
           }
 
-          return OriginalOpen.call(this, method, patched, async, user, password);
+          return OriginalOpen.call(this, method, patchedUrl, async, user, password);
         }
       } catch (e) {
         logDebug("XHR hook open error", e);
       }
-
       return OriginalOpen.call(this, method, url, async, user, password);
+    };
+
+    XMLHttpRequest.prototype.send = function (body) {
+      try {
+        if (this.__tmShouldPatch) {
+          const patch = buildPatch();
+
+          // body가 문자열이면 JSON 또는 x-www-form-urlencoded로 들어오는 케이스가 많음
+          if (typeof body === "string") {
+            const trimmed = body.trim();
+
+            // JSON 우선
+            const patchedJson = tryPatchJsonBody(trimmed, patch);
+            if (patchedJson != null) {
+              logDebug("XHR body patched (json)", { patch });
+              return OriginalSend.call(this, patchedJson);
+            }
+
+            // form-urlencoded
+            const patchedForm = tryPatchUrlEncodedBody(trimmed, patch);
+            if (patchedForm != null) {
+              logDebug("XHR body patched (form)", { patch });
+              return OriginalSend.call(this, patchedForm);
+            }
+
+            // 알 수 없는 문자열 body면 건드리지 않음
+            logDebug("XHR body not patched (unknown string)", { sample: trimmed.slice(0, 80) });
+            return OriginalSend.call(this, body);
+          }
+
+          // URLSearchParams면 직접 수정 가능
+          if (body instanceof URLSearchParams) {
+            for (const [k, v] of Object.entries(patch)) body.set(k, String(v));
+            logDebug("XHR body patched (URLSearchParams)", { patch });
+            return OriginalSend.call(this, body);
+          }
+
+          // FormData면 set 가능(단, 서버가 multipart를 받는 경우에만 의미)
+          if (body instanceof FormData) {
+            for (const [k, v] of Object.entries(patch)) body.set(k, String(v));
+            logDebug("XHR body patched (FormData)", { patch });
+            return OriginalSend.call(this, body);
+          }
+
+          // body가 null/undefined면 URL 쿼리 방식일 수 있으니 그대로
+        }
+      } catch (e) {
+        logDebug("XHR hook send error", e);
+      }
+      return OriginalSend.call(this, body);
     };
   }
 
