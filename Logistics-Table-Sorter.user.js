@@ -674,8 +674,7 @@
     const buildPatch = () => {
       const size = Math.min(Number(CONFIG_OVERRIDE.forcePageSize) || 300, 300);
       const patch = { size };
-      // 서버가 0-based page면 0이 맞을 수 있습니다.
-      // 지금은 기존 코드가 1을 쓰고 있으니 유지하되, 필요 시 0으로 바꾸세요.
+      
       if (CONFIG_OVERRIDE.forceFirstPage) patch.page = 0;
       return patch;
     };
